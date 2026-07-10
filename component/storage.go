@@ -10,17 +10,17 @@ type pool interface {
 }
 
 type ComponentStorage struct {
-	pools     map[ComponentID]pool
-	idCounter ComponentID
+	pools             map[ComponentID]pool
+	idCounter         ComponentID
 	entityLookupTable *lookupTable
-	filtersTable *filtersTable
+	filtersTable      *filtersTable
 }
 
 func NewComponentStorage() *ComponentStorage {
 	return &ComponentStorage{
-		pools: make(map[ComponentID]pool),
+		pools:             make(map[ComponentID]pool),
 		entityLookupTable: newLookupTable(),
-		filtersTable: newFiltersTable(),
+		filtersTable:      newFiltersTable(),
 	}
 }
 
@@ -74,6 +74,31 @@ func Set[T any](
 	typedPool.set(ent, val)
 
 	cs.entityLookupTable.set(ent, typ.id)
+}
+
+type componentSetter struct {
+	componentID ComponentID
+	setter      func(cs *ComponentStorage, ent world.Entity)
+}
+
+func With[T any](typ *ComponentType[T], val T) componentSetter {
+	return componentSetter{
+		componentID: typ.ID(),
+		setter: func(cs *ComponentStorage, ent world.Entity) {
+			typedPool := cs.pools[typ.id].(*typedPool[T])
+			typedPool.set(ent, val)
+		},
+	}
+}
+
+func SetMany(cs *ComponentStorage, ent world.Entity, setters ...componentSetter) {
+	componentIDs := make([]ComponentID, 0, len(setters))
+	for _, s := range setters {
+		s.setter(cs, ent)
+		componentIDs = append(componentIDs, s.componentID)
+	}
+
+	cs.entityLookupTable.set(ent, componentIDs...)
 }
 
 func Get[T any](

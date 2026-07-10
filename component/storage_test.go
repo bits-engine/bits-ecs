@@ -18,7 +18,6 @@ type CD struct {
 	value string
 }
 
-// Registering components
 func TestStorage_Register(t *testing.T) {
 	cs := component.NewComponentStorage()
 	CAT := component.Register[CA](cs)
@@ -39,8 +38,10 @@ func TestStorage_SetHasRemove(t *testing.T) {
 
 	component.Set(cs, ent1, CAT, CA{value: 67})
 	component.Set(cs, ent1, CBT, CB{value: 4.2})
-	component.Set(cs, ent2, CAT, CA{value: 78})
-	component.Set(cs, ent2, CDT, CD{value: "ent2"})
+	component.SetMany(cs, ent2,
+		component.With(CAT, CA{value: 78}),
+		component.With(CDT, CD{value: "ent2"}),
+	)
 
 	assert.True(t, component.Has(cs, ent1, CAT))
 	assert.True(t, component.Has(cs, ent1, CBT))
@@ -61,7 +62,6 @@ func TestStorage_SetHasRemove(t *testing.T) {
 	assert.False(t, component.Has(cs, ent2, CBT))
 }
 
-// getting, changing, setting again
 func TestStorage_SetGetSet(t *testing.T) {
 	cs := component.NewComponentStorage()
 	CAT := component.Register[CA](cs)
@@ -91,7 +91,72 @@ func TestStorage_SetGetSet(t *testing.T) {
 	assert.Equal(t, ca.value, 42)
 }
 
-// Filter creation, Filter usage
 func TestStorage_Querying(t *testing.T) {
+	cs := component.NewComponentStorage()
+	CAT := component.Register[CA](cs)
+	CBT := component.Register[CB](cs)
+	CDT := component.Register[CD](cs)
 
+	ent1 := world.Entity(0)
+	ent2 := world.Entity(1)
+	ent3 := world.Entity(2)
+	ent4 := world.Entity(3)
+
+	component.SetMany(cs, ent1,
+		component.With(CAT, CA{value: 78}),
+		component.With(CBT, CB{value: 42.2}),
+	)
+
+	component.SetMany(cs, ent2,
+		component.With(CAT, CA{value: 78}),
+		component.With(CBT, CB{value: 42.2}),
+		component.With(CDT, CD{value: "ent2"}),
+	)
+
+	component.SetMany(cs, ent3,
+		component.With(CBT, CB{value: 42.2}),
+		component.With(CDT, CD{value: "ent3"}),
+	)
+
+	component.SetMany(cs, ent4)
+
+	f1 := component.RegisterFilter(cs, component.NewFilter().
+		Require(CAT).
+		Require(CBT),
+	)
+	f2 := component.RegisterFilter(cs, component.NewFilter().
+		Require(CBT).
+		Exclude(CAT),
+	)
+	f3 := component.RegisterFilter(cs, component.NewFilter().
+		Exclude(CBT).
+		Exclude(CDT),
+	)
+
+	qr1 := component.Query(cs, f1)
+	qr2 := component.Query(cs, f2)
+	qr3 := component.Query(cs, f3)
+
+	assert.Contains(t, qr1.List(), ent1)
+	assert.Contains(t, qr1.List(), ent2)
+	assert.NotContains(t, qr1.List(), ent3)
+	assert.NotContains(t, qr1.List(), ent4)
+
+	assert.Contains(t, qr2.List(), ent3)
+	assert.NotContains(t, qr2.List(), ent1)
+	assert.NotContains(t, qr2.List(), ent2)
+	assert.NotContains(t, qr2.List(), ent4)
+
+	assert.Contains(t, qr3.List(), ent4)
+	assert.NotContains(t, qr3.List(), ent1)
+	assert.NotContains(t, qr3.List(), ent2)
+	assert.NotContains(t, qr3.List(), ent3)
+
+	component.Remove(cs, ent1, CBT)
+
+	qr3 = component.Query(cs, f3)
+	assert.Contains(t, qr3.List(), ent4)
+	assert.Contains(t, qr3.List(), ent1)
+	assert.NotContains(t, qr3.List(), ent2)
+	assert.NotContains(t, qr3.List(), ent3)
 }

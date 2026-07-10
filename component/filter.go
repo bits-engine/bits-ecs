@@ -13,13 +13,13 @@ func NewFilter() *Filter {
 	return &Filter{}
 }
 
-func (f *Filter) Require(cid ComponentID) *Filter {
-	f.required = append(f.required, cid)
+func (f *Filter) Require(cid componentIdentifier) *Filter {
+	f.required = append(f.required, cid.ID())
 	return f
 }
 
-func (f *Filter) Exclude(cid ComponentID) *Filter {
-	f.excluded = append(f.excluded, cid)
+func (f *Filter) Exclude(cid componentIdentifier) *Filter {
+	f.excluded = append(f.excluded, cid.ID())
 	return f
 }
 

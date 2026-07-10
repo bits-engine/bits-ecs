@@ -1,4 +1,4 @@
-package comp
+package component
 
 import (
 	"fmt"
@@ -32,6 +32,10 @@ func (qr *queryResult) Next() bool {
 
 func (qr *queryResult) List() []world.Entity {
 	return qr.entitiesList
+}
+
+func (qr *queryResult) Entity() world.Entity {
+	return qr.entitiesList[qr.currentIDx]
 }
 
 func Query(cs *ComponentStorage, filterID FilterID) *queryResult {

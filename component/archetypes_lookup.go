@@ -1,4 +1,4 @@
-package comp
+package component
 
 import (
 	"github.com/bits-engine/bits-ecs/common/bitset"

@@ -36,8 +36,9 @@ func (b *BitSet) Clear(flag uint64) {
 
 func (b *BitSet) Key() string {
 	buf := make([]byte, len(b.words)*8)
+
 	for i, word := range b.words {
-		binary.LittleEndian.AppendUint64(buf[i*8:], word)
+		binary.PutUvarint(buf[i*8:], word)
 	}
 
 	return string(buf)

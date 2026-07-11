@@ -1,12 +1,12 @@
 package component
 
 import (
-	"github.com/bits-engine/bits-ecs/world"
+	"github.com/bits-engine/bits-ecs/entity"
 )
 
 type pool interface {
-	has(ent world.Entity) bool
-	remove(ent world.Entity) bool
+	has(ent entity.Entity) bool
+	remove(ent entity.Entity) bool
 }
 
 type ComponentStorage struct {
@@ -30,18 +30,18 @@ func (s *ComponentStorage) nextComponentID() ComponentID {
 	return id
 }
 
-func (cs *ComponentStorage) has(ent world.Entity, cid ComponentID) bool {
+func (cs *ComponentStorage) has(ent entity.Entity, cid ComponentID) bool {
 	return cs.pools[cid].has(ent)
 }
 
-func (cs *ComponentStorage) remove(ent world.Entity, cid ComponentID) bool {
+func (cs *ComponentStorage) remove(ent entity.Entity, cid ComponentID) bool {
 	cs.entityLookupTable.remove(ent, cid)
 	return cs.pools[cid].remove(ent)
 }
 
 func Remove[T any](
 	cs *ComponentStorage,
-	ent world.Entity,
+	ent entity.Entity,
 	typ *ComponentType[T],
 ) bool {
 	return cs.remove(ent, typ.id)
@@ -49,7 +49,7 @@ func Remove[T any](
 
 func Has[T any](
 	cs *ComponentStorage,
-	ent world.Entity,
+	ent entity.Entity,
 	typ *ComponentType[T],
 ) bool {
 	return cs.has(ent, typ.id)
@@ -66,7 +66,7 @@ func Register[T any](cs *ComponentStorage) *ComponentType[T] {
 
 func Set[T any](
 	cs *ComponentStorage,
-	ent world.Entity,
+	ent entity.Entity,
 	typ *ComponentType[T],
 	val T,
 ) {
@@ -78,20 +78,20 @@ func Set[T any](
 
 type componentSetter struct {
 	componentID ComponentID
-	setter      func(cs *ComponentStorage, ent world.Entity)
+	setter      func(cs *ComponentStorage, ent entity.Entity)
 }
 
 func With[T any](typ *ComponentType[T], val T) componentSetter {
 	return componentSetter{
 		componentID: typ.ID(),
-		setter: func(cs *ComponentStorage, ent world.Entity) {
+		setter: func(cs *ComponentStorage, ent entity.Entity) {
 			typedPool := cs.pools[typ.id].(*typedPool[T])
 			typedPool.set(ent, val)
 		},
 	}
 }
 
-func SetMany(cs *ComponentStorage, ent world.Entity, setters ...componentSetter) {
+func SetMany(cs *ComponentStorage, ent entity.Entity, setters ...componentSetter) {
 	componentIDs := make([]ComponentID, 0, len(setters))
 	for _, s := range setters {
 		s.setter(cs, ent)
@@ -103,7 +103,7 @@ func SetMany(cs *ComponentStorage, ent world.Entity, setters ...componentSetter)
 
 func Get[T any](
 	cs *ComponentStorage,
-	ent world.Entity,
+	ent entity.Entity,
 	typ *ComponentType[T],
 ) (*T, bool) {
 	typedPool := cs.pools[typ.id].(*typedPool[T])

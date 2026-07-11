@@ -3,16 +3,16 @@ package component
 import (
 	"fmt"
 
-	"github.com/bits-engine/bits-ecs/world"
+	"github.com/bits-engine/bits-ecs/entity"
 )
 
 type queryResult struct {
 	cs *ComponentStorage
-	entitiesList []world.Entity
+	entitiesList []entity.Entity
 	currentIDx   int
 }
 
-func newQueryResult(cs *ComponentStorage, entitiesList []world.Entity) *queryResult {
+func newQueryResult(cs *ComponentStorage, entitiesList []entity.Entity) *queryResult {
 	return &queryResult{
 		entitiesList: entitiesList,
 		cs: cs,
@@ -30,11 +30,11 @@ func (qr *queryResult) Next() bool {
 	return true
 }
 
-func (qr *queryResult) List() []world.Entity {
+func (qr *queryResult) List() []entity.Entity {
 	return qr.entitiesList
 }
 
-func (qr *queryResult) Entity() world.Entity {
+func (qr *queryResult) Entity() entity.Entity {
 	return qr.entitiesList[qr.currentIDx]
 }
 

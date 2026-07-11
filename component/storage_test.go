@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bits-engine/bits-ecs/component"
-	"github.com/bits-engine/bits-ecs/world"
+	"github.com/bits-engine/bits-ecs/entity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,8 +33,8 @@ func TestStorage_SetHasRemove(t *testing.T) {
 	CBT := component.Register[CB](cs)
 	CDT := component.Register[CD](cs)
 
-	ent1 := world.Entity(0)
-	ent2 := world.Entity(1)
+	ent1 := entity.Entity(0)
+	ent2 := entity.Entity(1)
 
 	component.Set(cs, ent1, CAT, CA{value: 67})
 	component.Set(cs, ent1, CBT, CB{value: 4.2})
@@ -66,7 +66,7 @@ func TestStorage_SetGetSet(t *testing.T) {
 	cs := component.NewComponentStorage()
 	CAT := component.Register[CA](cs)
 
-	ent1 := world.Entity(0)
+	ent1 := entity.Entity(0)
 
 	component.Set(cs, ent1, CAT, CA{value: 67})
 
@@ -97,10 +97,10 @@ func TestStorage_Querying(t *testing.T) {
 	CBT := component.Register[CB](cs)
 	CDT := component.Register[CD](cs)
 
-	ent1 := world.Entity(0)
-	ent2 := world.Entity(1)
-	ent3 := world.Entity(2)
-	ent4 := world.Entity(3)
+	ent1 := entity.Entity(0)
+	ent2 := entity.Entity(1)
+	ent3 := entity.Entity(2)
+	ent4 := entity.Entity(3)
 
 	component.SetMany(cs, ent1,
 		component.With(CAT, CA{value: 78}),
@@ -167,10 +167,10 @@ func TestStorage_Field(t *testing.T) {
 	CBT := component.Register[CB](cs)
 	CDT := component.Register[CD](cs)
 
-	ent1 := world.Entity(0)
-	ent2 := world.Entity(1)
-	ent3 := world.Entity(2)
-	ent4 := world.Entity(3)
+	ent1 := entity.Entity(0)
+	ent2 := entity.Entity(1)
+	ent3 := entity.Entity(2)
+	ent4 := entity.Entity(3)
 
 	component.SetMany(cs, ent1,
 		component.With(CAT, CA{value: 78}),

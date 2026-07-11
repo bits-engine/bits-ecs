@@ -1,12 +1,12 @@
 package component
 
-import "github.com/bits-engine/bits-ecs/world"
+import "github.com/bits-engine/bits-ecs/entity"
 
 const noEntity = -1
 
 type typedPool[T any] struct {
 	dense         []T
-	denseEntities []world.Entity
+	denseEntities []entity.Entity
 	sparse        []int // referencing idx in denseEntities and dense like Entity -> denseEntitiesIdx and Entity -> denseIdx
 }
 
@@ -14,7 +14,7 @@ func newPool[T any]() *typedPool[T] {
 	return &typedPool[T]{}
 }
 
-func (p *typedPool[T]) set(ent world.Entity, c T) {
+func (p *typedPool[T]) set(ent entity.Entity, c T) {
 	for len(p.sparse) <= int(ent) {
 		p.sparse = append(p.sparse, noEntity)
 	}
@@ -30,7 +30,7 @@ func (p *typedPool[T]) set(ent world.Entity, c T) {
 	p.dense = append(p.dense, c)
 }
 
-func (p *typedPool[T]) has(ent world.Entity) bool {
+func (p *typedPool[T]) has(ent entity.Entity) bool {
 	if len(p.sparse) <= int(ent) {
 		return false
 	}
@@ -38,7 +38,7 @@ func (p *typedPool[T]) has(ent world.Entity) bool {
 	return p.sparse[ent] != noEntity
 }
 
-func (p *typedPool[T]) get(ent world.Entity) (*T, bool) {
+func (p *typedPool[T]) get(ent entity.Entity) (*T, bool) {
 	if !p.has(ent) {
 		return nil, false
 	}
@@ -46,7 +46,7 @@ func (p *typedPool[T]) get(ent world.Entity) (*T, bool) {
 	return &p.dense[p.sparse[ent]], true
 }
 
-func (p *typedPool[T]) remove(ent world.Entity) bool {
+func (p *typedPool[T]) remove(ent entity.Entity) bool {
 	exists := p.has(ent)
 	if !exists {
 		return false

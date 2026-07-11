@@ -2,7 +2,7 @@ package component
 
 import (
 	"github.com/bits-engine/bits-ecs/common/bitset"
-	"github.com/bits-engine/bits-ecs/world"
+	"github.com/bits-engine/bits-ecs/entity"
 )
 
 type archetypeID = string
@@ -27,20 +27,20 @@ func (at *archetype) recomputedID() archetypeID {
 
 type lookupTable struct {
 	archetypes        map[archetypeID]*archetype
-	archetypeToEntity map[archetypeID][]world.Entity
+	archetypeToEntity map[archetypeID][]entity.Entity
 	entityToArchetype *typedPool[entityArchetypeRecord]
 }
 
 func newLookupTable() *lookupTable {
 	return &lookupTable{
 		archetypes:        make(map[archetypeID]*archetype),
-		archetypeToEntity: make(map[archetypeID][]world.Entity),
+		archetypeToEntity: make(map[archetypeID][]entity.Entity),
 		entityToArchetype: &typedPool[entityArchetypeRecord]{},
 	}
 }
 
-func (t *lookupTable) query(required *bitset.BitSet, excluded *bitset.BitSet) []world.Entity {
-	res := make([]world.Entity, 0)
+func (t *lookupTable) query(required *bitset.BitSet, excluded *bitset.BitSet) []entity.Entity {
+	res := make([]entity.Entity, 0)
 
 	for archID, arch := range t.archetypes {
 		if !arch.components.HasAll(required) || !arch.components.HasNone(excluded) {
@@ -53,7 +53,7 @@ func (t *lookupTable) query(required *bitset.BitSet, excluded *bitset.BitSet) []
 	return res
 }
 
-func (t *lookupTable) removeEntityArchetype(ent world.Entity, archID archetypeID) {
+func (t *lookupTable) removeEntityArchetype(ent entity.Entity, archID archetypeID) {
 	rec, _ := t.entityToArchetype.get(ent)
 	idx := rec.idxInArchetype
 	ln := len(t.archetypeToEntity[archID])
@@ -74,13 +74,13 @@ func (t *lookupTable) removeEntityArchetype(ent world.Entity, archID archetypeID
 	t.entityToArchetype.remove(ent)
 }
 
-func (t *lookupTable) addEntityArchetype(ent world.Entity, newArch archetype) {
+func (t *lookupTable) addEntityArchetype(ent entity.Entity, newArch archetype) {
 	if _, exists := t.archetypes[newArch.recomputedID()]; !exists {
 		t.archetypes[newArch.id()] = &newArch
 	}
 
 	if _, exists := t.archetypeToEntity[newArch.id()]; !exists {
-		t.archetypeToEntity[newArch.id()] = make([]world.Entity, 0, 1)
+		t.archetypeToEntity[newArch.id()] = make([]entity.Entity, 0, 1)
 	}
 
 	t.archetypeToEntity[newArch.id()] = append(t.archetypeToEntity[newArch.id()], ent)
@@ -91,7 +91,7 @@ func (t *lookupTable) addEntityArchetype(ent world.Entity, newArch archetype) {
 	t.entityToArchetype.set(ent, rec)
 }
 
-func (t *lookupTable) set(ent world.Entity, cids ...ComponentID) {
+func (t *lookupTable) set(ent entity.Entity, cids ...ComponentID) {
 	newArch := archetype{components: &bitset.BitSet{}}
 
 	if rec, exists := t.entityToArchetype.get(ent); exists {
@@ -106,7 +106,7 @@ func (t *lookupTable) set(ent world.Entity, cids ...ComponentID) {
 	t.addEntityArchetype(ent, newArch)
 }
 
-func (t *lookupTable) remove(ent world.Entity, cids ...ComponentID) {
+func (t *lookupTable) remove(ent entity.Entity, cids ...ComponentID) {
 	newArch := archetype{components: &bitset.BitSet{}}
 
 	if rec, exists := t.entityToArchetype.get(ent); exists {

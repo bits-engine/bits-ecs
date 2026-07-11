@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/bits-engine/bits-ecs/component"
-	"github.com/bits-engine/bits-ecs/world"
+	"github.com/bits-engine/bits-ecs/entity"
 )
 
 type BenchA struct {
@@ -30,13 +30,13 @@ func prepareStorage() (*component.ComponentStorage, *component.ComponentType[Ben
 	c := component.Register[BenchC](cs)
 
 	for i := range benchmarkEntities {
-		component.SetMany(cs, world.Entity(i),
+		component.SetMany(cs, entity.Entity(i),
 			component.With(a, BenchA{X: i}),
 			component.With(b, BenchB{X: float32(i)}),
 		)
 
 		if i%2 == 0 {
-			component.Set(cs, world.Entity(i), c, BenchC{Name: "entity"})
+			component.Set(cs, entity.Entity(i), c, BenchC{Name: "entity"})
 		}
 	}
 
@@ -48,7 +48,7 @@ func BenchmarkSet(b *testing.B) {
 	a := component.Register[BenchA](cs)
 
 	for i := 0; b.Loop(); i++ {
-		component.Set(cs, world.Entity(i), a, BenchA{X: i})
+		component.Set(cs, entity.Entity(i), a, BenchA{X: i})
 	}
 }
 
@@ -56,7 +56,7 @@ func BenchmarkGet(b *testing.B) {
 	cs, a, _, _ := prepareStorage()
 
 	for i := 0; b.Loop(); i++ {
-		component.Get(cs, world.Entity(i%benchmarkEntities), a)
+		component.Get(cs, entity.Entity(i%benchmarkEntities), a)
 	}
 }
 
@@ -64,7 +64,7 @@ func BenchmarkHas(b *testing.B) {
 	cs, a, _, _ := prepareStorage()
 
 	for i := 0; b.Loop(); i++ {
-		component.Has(cs, world.Entity(i%benchmarkEntities), a)
+		component.Has(cs, entity.Entity(i%benchmarkEntities), a)
 	}
 }
 
@@ -73,11 +73,11 @@ func BenchmarkRemoveSet(b *testing.B) {
 	a := component.Register[BenchA](cs)
 
 	for i := range benchmarkEntities {
-		component.Set(cs, world.Entity(i), a, BenchA{X: i})
+		component.Set(cs, entity.Entity(i), a, BenchA{X: i})
 	}
 
 	for i := 0; b.Loop(); i++ {
-		e := world.Entity(i % benchmarkEntities)
+		e := entity.Entity(i % benchmarkEntities)
 		component.Remove(cs, e, a)
 		component.Set(cs, e, a, BenchA{X: i})
 	}
@@ -90,7 +90,7 @@ func BenchmarkSetMany(b *testing.B) {
 	c := component.Register[BenchC](cs)
 
 	for i := 0; b.Loop(); i++ {
-		component.SetMany(cs, world.Entity(i),
+		component.SetMany(cs, entity.Entity(i),
 			component.With(a, BenchA{X: i}),
 			component.With(c, BenchC{Name: "hello"}),
 		)

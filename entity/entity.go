@@ -1,3 +1,3 @@
-package world
+package entity
 
 type Entity = uint

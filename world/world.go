@@ -3,13 +3,12 @@ package world
 import (
 	"github.com/bits-engine/bits-ecs/component"
 	"github.com/bits-engine/bits-ecs/resource"
-	"github.com/bits-engine/bits-ecs/scheduler"
 )
 
 type World struct {
 	cs         *component.ComponentStorage
 	rs         *resource.ResourceStorage
-	schedulers []*scheduler.Scheduler
+	schedulers []*Scheduler
 	isRunning  bool
 }
 
@@ -18,10 +17,10 @@ func New() *World {
 		cs:        component.NewComponentStorage(),
 		rs:        resource.NewResourceStorage(),
 		isRunning: false,
-		schedulers: []*scheduler.Scheduler{
-			scheduler.New(),
-			scheduler.New(),
-			scheduler.New(),
+		schedulers: []*Scheduler{
+			NewScheduler(),
+			NewScheduler(),
+			NewScheduler(),
 		},
 	}
 }
@@ -34,7 +33,7 @@ func (w *World) RS() *resource.ResourceStorage {
 	return w.rs
 }
 
-func (w *World) Sched(schedule Schedule) *scheduler.Scheduler {
+func (w *World) Sched(schedule Schedule) *Scheduler {
 	return w.schedulers[schedule]
 }
 

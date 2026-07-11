@@ -1,9 +1,9 @@
-package scheduler
+package world
 
 type Scheduler struct {
 
 }
 
-func New() *Scheduler {
+func NewScheduler() *Scheduler {
 	return &Scheduler{}
 }

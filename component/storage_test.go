@@ -160,3 +160,58 @@ func TestStorage_Querying(t *testing.T) {
 	assert.NotContains(t, qr3.List(), ent2)
 	assert.NotContains(t, qr3.List(), ent3)
 }
+
+func TestStorage_Field(t *testing.T) {
+	cs := component.NewComponentStorage()
+	CAT := component.Register[CA](cs)
+	CBT := component.Register[CB](cs)
+	CDT := component.Register[CD](cs)
+
+	ent1 := world.Entity(0)
+	ent2 := world.Entity(1)
+	ent3 := world.Entity(2)
+	ent4 := world.Entity(3)
+
+	component.SetMany(cs, ent1,
+		component.With(CAT, CA{value: 78}),
+		component.With(CBT, CB{value: 42.2}),
+	)
+
+	component.SetMany(cs, ent2,
+		component.With(CAT, CA{value: 78}),
+		component.With(CBT, CB{value: 42.2}),
+		component.With(CDT, CD{value: "ent2"}),
+	)
+
+	component.SetMany(cs, ent3,
+		component.With(CBT, CB{value: 42.2}),
+		component.With(CDT, CD{value: "ent3"}),
+	)
+
+	component.SetMany(cs, ent4)
+
+	f1 := component.RegisterFilter(cs, component.NewFilter().
+		Require(CAT).
+		Require(CBT),
+	)
+
+	qr := component.Query(cs, f1)
+	assert.Equal(t, len(qr.List()), 2)
+
+	for qr.Next() {
+		ca, _ := component.Field(qr, CAT)
+		ca.value = int(qr.Entity())
+
+		cb, _ := component.Field(qr, CBT)
+		cb.value *= float32(ca.value)
+	}
+
+	qr = component.Query(cs, f1)
+
+	assert.Equal(t, len(qr.List()), 2)
+
+	for qr.Next() {
+		ca, _ := component.Field(qr, CAT)
+		assert.Equal(t, ca.value, int(qr.Entity()))
+	}
+}

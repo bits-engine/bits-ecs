@@ -37,3 +37,21 @@ func (w *World) RS() *resource.ResourceStorage {
 func (w *World) Sched(schedule Schedule) *scheduler.Scheduler {
 	return w.schedulers[schedule]
 }
+
+func (w *World) Run() {
+	// Run startup scheduler...
+	// w.Sched(ScheduleStartup).Run(w)
+
+	w.isRunning = true
+	for w.isRunning {
+		// Run update scheduler in loop...
+		// w.Sched(ScheduleUpdate).Run(w)
+	}
+
+	// Run shutdown scheduler...
+	// w.Sched(ScheduleShutdown).Run(w)
+}
+
+func (w *World) Stop() {
+	w.isRunning = false
+}

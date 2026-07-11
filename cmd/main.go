@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bits-engine/bits-ecs/component"
-	"github.com/bits-engine/bits-ecs/world"
+	"github.com/bits-engine/bits-ecs/entity"
 )
 
 type Health struct {
@@ -26,8 +26,8 @@ func main() {
 	HealEffectType := component.Register[HealEffect](cs)
 
 	// Creating entities and components
-	enemy := world.Entity(0)
-	player := world.Entity(1)
+	enemy := entity.Entity(0)
+	player := entity.Entity(1)
 
 	component.Set(cs, enemy, EnemyType, Enemy{})
 	component.Set(cs, enemy, HealthType, Health{})

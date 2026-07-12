@@ -15,6 +15,7 @@ type Scheduler struct {
 func NewScheduler() *Scheduler {
 	return &Scheduler{
 		systems: []*systemNode{},
+		systemIDX: map[SystemID]int{},
 	}
 }
 
@@ -76,7 +77,7 @@ func (s *Scheduler) buildDependencyGraph() map[SystemID][]SystemID {
 	for _, node := range s.systems {
 		// before
 		for _, depID := range node.conf.before {
-			if !slices.ContainsFunc(s.systems, func(e *systemNode) bool { return e.id == depID }) {
+			if _, exists := s.systemByID(depID); !exists {
 				panic(fmt.Sprintf("System %+v missing dependency from before: %d", node, depID))
 			}
 
@@ -87,7 +88,7 @@ func (s *Scheduler) buildDependencyGraph() map[SystemID][]SystemID {
 
 		// after
 		for _, depID := range node.conf.after {
-			if !slices.ContainsFunc(s.systems, func(e *systemNode) bool { return e.id == depID }) {
+			if _, exists := s.systemByID(depID); !exists {
 				panic(fmt.Sprintf("System %+v missing dependency from after: %d", node, depID))
 			}
 
@@ -162,6 +163,7 @@ func (s *Scheduler) buildExecutionLayers(sorted []SystemID) []executionLayer {
 
 			layers[i] = append(layers[i], sysID)
 			placed = true
+			break
 		}
 
 		if !placed {
@@ -175,12 +177,6 @@ func (s *Scheduler) buildExecutionLayers(sorted []SystemID) []executionLayer {
 func (s *Scheduler) systemByID(sysID SystemID) (*systemNode, bool) {
 	if idx, exists := s.systemIDX[sysID]; exists {
 		return s.systems[idx], true
-	}
-
-	for _, node := range s.systems {
-		if node.id == sysID {
-			return node, true
-		}
 	}
 
 	return nil, false

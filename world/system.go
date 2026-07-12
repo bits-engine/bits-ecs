@@ -29,6 +29,6 @@ func (sc *sysConf) After(sid SystemID) *sysConf {
 
 // System will be running BEFORE every system in this list
 func (sc *sysConf) Before(sid SystemID) *sysConf {
-	sc.after = append(sc.after, sid)
+	sc.before = append(sc.before, sid)
 	return sc
 }

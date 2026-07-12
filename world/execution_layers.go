@@ -24,7 +24,8 @@ type executionLayer []SystemID
 
 func (e executionLayer) HaveConflicting(s *Scheduler, sysNode *systemNode) bool {
 	for _, sysID := range e {
-		if s.systems[sysID].accessConfig.Conflicts(sysNode.accessConfig) {
+		sys, _ := s.systemByID(sysID)
+		if sys.accessConfig.Conflicts(sysNode.accessConfig) {
 			return true
 		}
 	}
@@ -34,7 +35,8 @@ func (e executionLayer) HaveConflicting(s *Scheduler, sysNode *systemNode) bool 
 
 func (e executionLayer) HaveBefore(s *Scheduler, sysNode *systemNode) bool {
 	for _, sysID := range e {
-		if s.systems[sysID].isBefore(sysNode) {
+		sys, _ := s.systemByID(sysID)
+		if sys.isBefore(sysNode) {
 			return true
 		}
 	}

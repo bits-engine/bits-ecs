@@ -20,7 +20,7 @@ func (fr *csFilterRegistry) Register(
 	f *component.Filter,
 ) component.FilterID {
 	for _, compID := range f.Required() {
-		if !slices.Contains(ac.compWrite, compID) && !slices.Contains(ac.compRead, compID) {
+		if !slices.Contains(ac.compWrite, compID) && !slices.Contains(ac.compRead, compID) && !ac.exclusive {
 			panic(fmt.Sprint("filter can not contain componentID", compID, "because it is not in AccessConfig set"))
 		}
 	}

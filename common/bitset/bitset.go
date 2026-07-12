@@ -66,6 +66,20 @@ func (b *BitSet) HasAll(o *BitSet) bool {
 	return true
 }
 
+func (b *BitSet) HasAny(o *BitSet) bool {
+	for i, word := range o.words {
+		if i >= len(b.words) {
+			break
+		}
+
+		if b.words[i]&word != 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (b *BitSet) HasNone(o *BitSet) bool {
 	for i, word := range o.words {
 		if i >= len(b.words) {

@@ -37,6 +37,10 @@ func (w *World) Sched(schedule Schedule) *Scheduler {
 	return w.schedulers[schedule]
 }
 
+func (w *World) AddSystem(schedule Schedule, cfg *sysConf) SystemID {
+	return w.schedulers[schedule].Add(w, cfg)
+}
+
 func (w *World) Run() {
 	// Run startup scheduler...
 	// w.Sched(ScheduleStartup).Run(w)

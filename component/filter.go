@@ -23,6 +23,14 @@ func (f *Filter) Exclude(cid componentIdentifier) *Filter {
 	return f
 }
 
+func (f *Filter) Required() []ComponentID {
+	return f.required
+}
+
+func (f *Filter) Excluded() []ComponentID {
+	return f.excluded
+}
+
 type FilterID = uint
 
 type compiledFilter struct {

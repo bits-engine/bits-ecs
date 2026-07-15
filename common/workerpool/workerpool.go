@@ -1,6 +1,10 @@
 package workerpool
 
-import "runtime"
+import (
+	"runtime"
+
+	"github.com/metacubex/gvisor/pkg/tcpip/link/sharedmem/queue"
+)
 
 // Many workers
 // Thread binded
@@ -14,9 +18,8 @@ type worker[R any] struct {
 	output chan R
 }
 
-func newWorker[R any](taskBuffer int) *worker[R] {
+func newWorker[R any](taskBuffer int, output chan task[R]) *worker[R] {
 	input := make(chan task[R], taskBuffer)
-	output := make(chan R, taskBuffer)
 
 	return &worker[R]{
 		input:  input,
@@ -52,7 +55,8 @@ func (w *worker[R]) Stop() {
 
 type WorkerPool[R any] struct {
 	workers []*worker[R]
-	queue []
+	roundRobinIDX int
+	output chan R
 }
 
 func New[R any](workersCount int) *WorkerPool[R] {
@@ -69,7 +73,22 @@ func New[R any](workersCount int) *WorkerPool[R] {
 
 	return &WorkerPool[R]{
 		workers: workers,
+		roundRobinIDX: 0,
 	}
 }
 
-func Run(task)
+func (wp *WorkerPool[R]) nextWorkerIDX() int {
+	idx := wp.roundRobinIDX
+	wp.roundRobinIDX++
+	wp.roundRobinIDX = wp.roundRobinIDX % len(wp.workers)
+
+	return idx
+}
+
+func (wp *WorkerPool[R]) Output() <-chan R{
+	return wp.output
+}
+
+func (wp *WorkerPool[R]) Run(t task[R]) {
+
+}

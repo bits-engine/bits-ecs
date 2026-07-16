@@ -2,14 +2,7 @@ package workerpool
 
 import (
 	"runtime"
-
-	"github.com/metacubex/gvisor/pkg/tcpip/link/sharedmem/queue"
 )
-
-// Many workers
-// Thread binded
-// Run(func()...) []R
-// RunLocked(func(), threadHash)
 
 type task[R any] func() R
 
@@ -18,7 +11,7 @@ type worker[R any] struct {
 	output chan R
 }
 
-func newWorker[R any](taskBuffer int, output chan task[R]) *worker[R] {
+func newWorker[R any](taskBuffer int, output chan R) *worker[R] {
 	input := make(chan task[R], taskBuffer)
 
 	return &worker[R]{
@@ -36,12 +29,10 @@ func (w *worker[R]) Start(lockOSThread bool) {
 		for task := range w.input {
 			w.output <- task()
 		}
-
-		close(w.output)
 	}()
 }
 
-func (w *worker[R]) AddTask(t task[R]) {
+func (w *worker[R]) Add(t task[R]) {
 	w.input <- t
 }
 
@@ -54,9 +45,9 @@ func (w *worker[R]) Stop() {
 }
 
 type WorkerPool[R any] struct {
-	workers []*worker[R]
+	workers       []*worker[R]
 	roundRobinIDX int
-	output chan R
+	output        chan R
 }
 
 func New[R any](workersCount int) *WorkerPool[R] {
@@ -64,16 +55,18 @@ func New[R any](workersCount int) *WorkerPool[R] {
 		panic("worker count can not be <= 0")
 	}
 
+	output := make(chan R, workersCount)
 	workers := make([]*worker[R], 0, workersCount)
-	for _ = range workersCount {
-		w := newWorker[R](workersCount)
+	for range workersCount {
+		w := newWorker(workersCount, output)
 		w.Start(true)
 		workers = append(workers, w)
 	}
 
 	return &WorkerPool[R]{
-		workers: workers,
+		workers:       workers,
 		roundRobinIDX: 0,
+		output: output,
 	}
 }
 
@@ -85,10 +78,37 @@ func (wp *WorkerPool[R]) nextWorkerIDX() int {
 	return idx
 }
 
-func (wp *WorkerPool[R]) Output() <-chan R{
+func (wp *WorkerPool[R]) Output() <-chan R {
 	return wp.output
 }
 
-func (wp *WorkerPool[R]) Run(t task[R]) {
+func (wp *WorkerPool[R]) Stop() {
+	for _, w := range wp.workers {
+		w.Stop()
+	}
 
+	close(wp.output)
+}
+
+func (wp *WorkerPool[R]) AddTo(workerID int, tasks ...task[R]) {
+	for _, t := range tasks {
+		wp.workers[workerID].Add(t)
+	}
+}
+
+func (wp *WorkerPool[R]) Add(tasks ...task[R]) {
+	for _, t := range tasks {
+		idx := wp.nextWorkerIDX()
+		wp.workers[idx].Add(t)
+	}
+}
+
+func (wp *WorkerPool[R]) WaitN(resultsCount int) []R {
+	result := make([]R, 0, resultsCount)
+
+	for len(result) < resultsCount {
+		result = append(result, <-wp.output)
+	}
+
+	return result
 }

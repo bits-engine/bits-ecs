@@ -78,6 +78,10 @@ func (wp *WorkerPool[R]) nextWorkerIDX() int {
 	return idx
 }
 
+func (wp *WorkerPool[R]) WorkerCount() int {
+	return len(wp.workers)
+}
+
 func (wp *WorkerPool[R]) Output() <-chan R {
 	return wp.output
 }

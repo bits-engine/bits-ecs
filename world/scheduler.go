@@ -2,20 +2,28 @@ package world
 
 import (
 	"fmt"
+	"runtime"
 	"slices"
+
+	"github.com/bits-engine/bits-ecs/common/workerpool"
 )
 
+type unit = struct{}
+
 type Scheduler struct {
-	idCounter SystemID
-	systems   []*systemNode
-	systemIDX map[SystemID]int
+	idCounter       SystemID
+	systems         []*systemNode
+	systemIDX       map[SystemID]int
 	executionLayers []executionLayer
+	w               *World
+	wp              *workerpool.WorkerPool[unit]
 }
 
-func NewScheduler() *Scheduler {
+func NewScheduler(w *World) *Scheduler {
 	return &Scheduler{
-		systems: []*systemNode{},
 		systemIDX: map[SystemID]int{},
+		w:         w,
+		wp:        workerpool.New[unit](runtime.NumCPU()),
 	}
 }
 
@@ -180,4 +188,35 @@ func (s *Scheduler) systemByID(sysID SystemID) (*systemNode, bool) {
 	}
 
 	return nil, false
+}
+
+func (s *Scheduler) Stop() {
+	s.wp.Stop()
+}
+
+func (s *Scheduler) Run() {
+	for _, layer := range s.executionLayers {
+		go func() {
+			for _, sysID := range layer {
+				sysNode, exists := s.systemByID(sysID)
+				if !exists {
+					panic(fmt.Sprintf("system %d not found during Run", sysID))
+				}
+				if !sysNode.conf.threadLocked {
+					s.wp.Add(func() unit {
+						sysNode.conf.system.Run(s.w)
+						return unit{}
+					})
+					continue
+				}
+
+				s.wp.AddTo(sysNode.conf.lockedOnThread%s.wp.WorkerCount(), func() unit {
+					sysNode.conf.system.Run(s.w)
+					return unit{}
+				})
+			}
+		}()
+
+		s.wp.WaitN(len(layer))
+	}
 }

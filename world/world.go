@@ -13,16 +13,19 @@ type World struct {
 }
 
 func New() *World {
-	return &World{
+	w := &World{
 		cs:        component.NewComponentStorage(),
 		rs:        resource.NewResourceStorage(),
 		isRunning: false,
-		schedulers: []*Scheduler{
-			NewScheduler(),
-			NewScheduler(),
-			NewScheduler(),
-		},
 	}
+
+	w.schedulers = []*Scheduler{
+		NewScheduler(w),
+		NewScheduler(w),
+		NewScheduler(w),
+	}
+
+	return w
 }
 
 func (w *World) CS() *component.ComponentStorage {

@@ -10,19 +10,23 @@ import (
 
 type SysA struct {
 	comp componentIdentifier
-	res resourceIdentifier
+	res  resourceIdentifier
+	out  chan string
 }
 type SysB struct {
 	comp componentIdentifier
-	res resourceIdentifier
+	res  resourceIdentifier
+	out  chan string
 }
 type SysC struct {
 	comp componentIdentifier
-	res resourceIdentifier
+	res  resourceIdentifier
+	out  chan string
 }
 type SysExclusive struct {
 	comp componentIdentifier
-	res resourceIdentifier
+	res  resourceIdentifier
+	out  chan string
 }
 
 func (s *SysA) Access(fr FilterRegistry) *AccessConfig {
@@ -30,28 +34,36 @@ func (s *SysA) Access(fr FilterRegistry) *AccessConfig {
 	cfg.Reads(s.comp)
 	return cfg
 }
-func (s *SysA) Run(w *World) {}
+func (s *SysA) Run(w *World) {
+	s.out <- "SysA"
+}
 
 func (s *SysB) Access(fr FilterRegistry) *AccessConfig {
 	cfg := &AccessConfig{}
 	cfg.Writes(s.comp).WritesRes(s.res)
 	return cfg
 }
-func (s *SysB) Run(w *World) {}
+func (s *SysB) Run(w *World) {
+	s.out <- "SysB"
+}
 
 func (s *SysC) Access(fr FilterRegistry) *AccessConfig {
 	cfg := &AccessConfig{}
 	cfg.Reads(s.comp).WritesRes(s.res)
 	return cfg
 }
-func (s *SysC) Run(w *World) {}
+func (s *SysC) Run(w *World) {
+	s.out <- "SysC"
+}
 
 func (s *SysExclusive) Access(fr FilterRegistry) *AccessConfig {
 	cfg := &AccessConfig{}
 	cfg.Exclusive(true)
 	return cfg
 }
-func (s *SysExclusive) Run(w *World) {}
+func (s *SysExclusive) Run(w *World) {
+	s.out <- "SysExclusive"
+}
 
 func TestScheduler_AddSystem(t *testing.T) {
 	w := New()
@@ -79,4 +91,39 @@ func TestScheduler_AddSystem(t *testing.T) {
 	assert.Contains(t, w.Sched(ScheduleUpdate).executionLayers[1], sys2)
 	assert.Contains(t, w.Sched(ScheduleUpdate).executionLayers[2], sys3)
 	assert.Contains(t, w.Sched(ScheduleUpdate).executionLayers[2], sys4)
+
+	w.Sched(ScheduleUpdate).stop()
+}
+
+func TestScheduler_Run(t *testing.T) {
+	w := New()
+	cs := w.CS()
+	rs := w.RS()
+
+	comp := component.Register[int](cs)
+	res := resource.Register[int](rs)
+
+	out := make(chan string, 4)
+
+	systems := w.Sched(ScheduleUpdate).AddMany(
+		NewSysConf(&SysB{comp: comp, res: res, out: out}).LockThread(1),
+		NewSysConf(&SysExclusive{comp: comp, res: res, out: out}).LockThread(1),
+	)
+	w.AddSystem(ScheduleUpdate, NewSysConf(&SysC{comp: comp, res: res, out: out}).After(systems[1]))
+	w.AddSystem(ScheduleUpdate, NewSysConf(&SysA{comp: comp, res: res, out: out}))
+
+	w.Sched(ScheduleUpdate).run()
+
+	result := make([]string, 0, 4)
+
+	for range cap(result) {
+		result = append(result, <-out)
+	}
+
+	assert.Equal(t, result[0], "SysB")
+	assert.Equal(t, result[1], "SysExclusive")
+	assert.Contains(t, result[2:], "SysA")
+	assert.Contains(t, result[2:], "SysC")
+
+	w.Sched(ScheduleUpdate).stop()
 }

@@ -41,21 +41,25 @@ func (w *World) Sched(schedule Schedule) *Scheduler {
 }
 
 func (w *World) AddSystem(schedule Schedule, cfg *sysConf) SystemID {
-	return w.schedulers[schedule].Add(w, cfg)
+	return w.schedulers[schedule].Add(cfg)
 }
 
 func (w *World) Run() {
 	// Run startup scheduler...
-	// w.Sched(ScheduleStartup).Run(w)
+	w.Sched(ScheduleStartup).run()
+	w.Sched(ScheduleStartup).stop()
 
 	w.isRunning = true
 	for w.isRunning {
 		// Run update scheduler in loop...
-		// w.Sched(ScheduleUpdate).Run(w)
+		w.Sched(ScheduleUpdate).run()
 	}
 
+	w.Sched(ScheduleUpdate).stop()
+
 	// Run shutdown scheduler...
-	// w.Sched(ScheduleShutdown).Run(w)
+	w.Sched(ScheduleShutdown).run()
+	w.Sched(ScheduleShutdown).stop()
 }
 
 func (w *World) Stop() {

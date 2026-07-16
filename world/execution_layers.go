@@ -8,10 +8,6 @@ type systemNode struct {
 	accessConfig *compiledAccessConfig
 }
 
-func (sn *systemNode) isAfter(o *systemNode) bool {
-	return o.isBefore(sn)
-}
-
 func (sn *systemNode) isBefore(o *systemNode) bool {
 	if slices.Contains(sn.conf.before, o.id) || slices.Contains(o.conf.after, sn.id) {
 		return true

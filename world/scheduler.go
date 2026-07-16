@@ -33,14 +33,14 @@ func (s *Scheduler) nextID() SystemID {
 	return id
 }
 
-func (s *Scheduler) addNoRebuild(w *World, conf *sysConf) SystemID {
+func (s *Scheduler) addNoRebuild(conf *sysConf) SystemID {
 	id := s.nextID()
 
 	sysNode := &systemNode{
 		id:   id,
 		conf: conf,
 		accessConfig: conf.system.Access(
-			&csFilterRegistry{cs: w.CS()},
+			&csFilterRegistry{cs: s.w.CS()},
 		).Compile(),
 	}
 
@@ -50,11 +50,11 @@ func (s *Scheduler) addNoRebuild(w *World, conf *sysConf) SystemID {
 	return id
 }
 
-func (s *Scheduler) AddMany(w *World, confs ...*sysConf) []SystemID {
+func (s *Scheduler) AddMany(confs ...*sysConf) []SystemID {
 	res := make([]SystemID, 0, len(confs))
 
 	for _, conf := range confs {
-		res = append(res, s.addNoRebuild(w, conf))
+		res = append(res, s.addNoRebuild(conf))
 	}
 
 	s.rebuildExecutionLayers()
@@ -62,8 +62,8 @@ func (s *Scheduler) AddMany(w *World, confs ...*sysConf) []SystemID {
 	return res
 }
 
-func (s *Scheduler) Add(w *World, conf *sysConf) SystemID {
-	sysID := s.addNoRebuild(w, conf)
+func (s *Scheduler) Add(conf *sysConf) SystemID {
+	sysID := s.addNoRebuild(conf)
 	s.rebuildExecutionLayers()
 	return sysID
 }
@@ -111,7 +111,7 @@ func (s *Scheduler) buildDependencyGraph() map[SystemID][]SystemID {
 
 func (s *Scheduler) toposortSystemGraph(graph map[SystemID][]SystemID) []SystemID {
 	inDegree := make(map[SystemID]int, len(graph))
-	for sysID, _ := range graph {
+	for sysID := range graph {
 		inDegree[sysID] = 0
 	}
 
@@ -190,11 +190,11 @@ func (s *Scheduler) systemByID(sysID SystemID) (*systemNode, bool) {
 	return nil, false
 }
 
-func (s *Scheduler) Stop() {
+func (s *Scheduler) stop() {
 	s.wp.Stop()
 }
 
-func (s *Scheduler) Run() {
+func (s *Scheduler) run() {
 	for _, layer := range s.executionLayers {
 		go func() {
 			for _, sysID := range layer {

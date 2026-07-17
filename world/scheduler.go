@@ -1,12 +1,17 @@
 package world
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"sync"
 
 	"github.com/bits-engine/bits-ecs/common/workerpool"
+	"github.com/bits-engine/bits-ecs/logging"
 )
+
+var schedlog = logging.New("Scheduler")
 
 type Scheduler struct {
 	idCounter       SystemID
@@ -50,6 +55,8 @@ func (s *Scheduler) addNoRebuild(conf *sysConf) SystemID {
 	s.systems = append(s.systems, sysNode)
 	s.systemIDX[id] = len(s.systems) - 1
 
+	schedlog.Get().Info("system registered", "systemNode", sysNode.repr())
+
 	return id
 }
 
@@ -75,6 +82,10 @@ func (s *Scheduler) rebuildExecutionLayers() {
 	graph := s.buildDependencyGraph()
 	sortedSystems := s.toposortSystemGraph(graph)
 	s.executionLayers = s.buildExecutionLayers(sortedSystems)
+
+	if schedlog.Get().Handler().Enabled(context.Background(), slog.LevelInfo) {
+		schedlog.Get().Info("layers rebuilt", "layers", reprExecutionLayers(s))
+	}
 }
 
 // map[BeforeSystem][]AfterSystem

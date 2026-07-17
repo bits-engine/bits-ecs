@@ -8,7 +8,7 @@ import (
 )
 
 func TestWorld_Schedules(t *testing.T) {
-	w := world.New()
+	w := world.New(&world.Conf{WorkersCount: 2})
 
 	assert.NotNil(t, w.Sched(world.ScheduleStartup))
 	assert.NotNil(t, w.Sched(world.ScheduleUpdate))
@@ -58,7 +58,7 @@ func (s *SysC) Run(w *world.World) {
 }
 
 func TestScheduler_Run(t *testing.T) {
-	w := world.New()
+	w := world.New(&world.Conf{WorkersCount: 2})
 
 	out := make(chan string, 6)
 

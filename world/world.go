@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/bits-engine/bits-ecs/common/workerpool"
 	"github.com/bits-engine/bits-ecs/component"
 	"github.com/bits-engine/bits-ecs/resource"
 )
@@ -10,19 +11,23 @@ type World struct {
 	rs         *resource.ResourceStorage
 	schedulers []*Scheduler
 	isRunning  bool
+	wp         *workerpool.WorkerPool
 }
 
-func New() *World {
+func New(conf *Conf) *World {
+	wp := workerpool.New(conf.WorkersCount)
+
 	w := &World{
 		cs:        component.NewComponentStorage(),
 		rs:        resource.NewResourceStorage(),
 		isRunning: false,
+		wp:        wp,
 	}
 
 	w.schedulers = []*Scheduler{
-		NewScheduler(w),
-		NewScheduler(w),
-		NewScheduler(w),
+		NewScheduler(w, wp),
+		NewScheduler(w, wp),
+		NewScheduler(w, wp),
 	}
 
 	return w
@@ -47,7 +52,6 @@ func (w *World) AddSystem(schedule Schedule, cfg *sysConf) SystemID {
 func (w *World) Run() {
 	// Run startup scheduler...
 	w.Sched(ScheduleStartup).run()
-	w.Sched(ScheduleStartup).stop()
 
 	w.isRunning = true
 	for w.isRunning {
@@ -55,11 +59,11 @@ func (w *World) Run() {
 		w.Sched(ScheduleUpdate).run()
 	}
 
-	w.Sched(ScheduleUpdate).stop()
-
 	// Run shutdown scheduler...
 	w.Sched(ScheduleShutdown).run()
-	w.Sched(ScheduleShutdown).stop()
+
+	// Stop workers
+	w.wp.Stop()
 }
 
 func (w *World) Stop() {

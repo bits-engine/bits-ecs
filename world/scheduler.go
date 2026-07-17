@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"runtime"
 	"slices"
 	"sync"
 
@@ -19,11 +18,11 @@ type Scheduler struct {
 	wg              *sync.WaitGroup
 }
 
-func NewScheduler(w *World) *Scheduler {
+func NewScheduler(w *World, wp *workerpool.WorkerPool) *Scheduler {
 	return &Scheduler{
 		systemIDX: map[SystemID]int{},
 		w:         w,
-		wp:        workerpool.New(runtime.NumCPU()),
+		wp:        wp,
 		wg:        &sync.WaitGroup{},
 	}
 }
@@ -192,10 +191,6 @@ func (s *Scheduler) systemByID(sysID SystemID) (*systemNode, bool) {
 	}
 
 	return nil, false
-}
-
-func (s *Scheduler) stop() {
-	s.wp.Stop()
 }
 
 func (s *Scheduler) run() {

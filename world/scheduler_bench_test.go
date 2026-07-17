@@ -18,7 +18,7 @@ func (s *DummySys) Run(w *World) {
 }
 
 func BenchmarkScheduler_Run2x2(b *testing.B) {
-	w := New()
+	w := New(&Conf{WorkersCount: 2})
 
 	w.Sched(ScheduleUpdate).Add(NewSysConf(&DummySys{}))
 	sys2 := w.Sched(ScheduleUpdate).Add(NewSysConf(&DummySys{}))
@@ -31,7 +31,7 @@ func BenchmarkScheduler_Run2x2(b *testing.B) {
 }
 
 func BenchmarkScheduler_Run4x1(b *testing.B) {
-	w := New()
+	w := New(&Conf{WorkersCount: 2})
 
 	sys1 := w.Sched(ScheduleUpdate).Add(NewSysConf(&DummySys{}))
 	sys2 := w.Sched(ScheduleUpdate).Add(NewSysConf(&DummySys{}).After(sys1))
@@ -44,7 +44,7 @@ func BenchmarkScheduler_Run4x1(b *testing.B) {
 }
 
 func BenchmarkScheduler_Run1x2(b *testing.B) {
-	w := New()
+	w := New(&Conf{WorkersCount: 2})
 
 	w.Sched(ScheduleUpdate).Add(NewSysConf(&DummySys{}))
 	w.Sched(ScheduleUpdate).Add(NewSysConf(&DummySys{}))

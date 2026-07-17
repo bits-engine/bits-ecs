@@ -66,7 +66,7 @@ func (s *SysExclusive) Run(w *World) {
 }
 
 func TestScheduler_AddSystem(t *testing.T) {
-	w := New()
+	w := New(&Conf{WorkersCount: 2})
 	cs := w.CS()
 	rs := w.RS()
 
@@ -91,12 +91,10 @@ func TestScheduler_AddSystem(t *testing.T) {
 	assert.Contains(t, w.Sched(ScheduleUpdate).executionLayers[1], sys2)
 	assert.Contains(t, w.Sched(ScheduleUpdate).executionLayers[2], sys3)
 	assert.Contains(t, w.Sched(ScheduleUpdate).executionLayers[2], sys4)
-
-	w.Sched(ScheduleUpdate).stop()
 }
 
 func TestScheduler_Run(t *testing.T) {
-	w := New()
+	w := New(&Conf{WorkersCount: 2})
 	cs := w.CS()
 	rs := w.RS()
 
@@ -124,6 +122,4 @@ func TestScheduler_Run(t *testing.T) {
 	assert.Equal(t, result[1], "SysExclusive", result)
 	assert.Contains(t, result[2:], "SysA", result)
 	assert.Contains(t, result[2:], "SysC", result)
-
-	w.Sched(ScheduleUpdate).stop()
 }

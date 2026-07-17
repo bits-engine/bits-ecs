@@ -31,7 +31,8 @@ func newTestNode(id SystemID, before, after []SystemID, access *compiledAccessCo
 // newTestScheduler registers nodes directly (bypassing Add/AddMany, which
 // require a *World) and keeps systemIDX in sync, exactly like addNoRebuild does.
 func newTestScheduler(nodes ...*systemNode) *Scheduler {
-	s := NewScheduler(New())
+	w := New(&Conf{WorkersCount: 2})
+	s := w.schedulers[0]
 	for _, n := range nodes {
 		s.systems = append(s.systems, n)
 		s.systemIDX[n.id] = len(s.systems) - 1

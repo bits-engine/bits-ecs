@@ -1,11 +1,16 @@
 package world
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/bits-engine/bits-ecs/common/workerpool"
+)
 
 type systemNode struct {
 	id           SystemID
 	conf         *sysConf
 	accessConfig *compiledAccessConfig
+	wpTask       workerpool.Task
 }
 
 func (sn *systemNode) isBefore(o *systemNode) bool {

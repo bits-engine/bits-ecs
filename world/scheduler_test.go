@@ -120,10 +120,10 @@ func TestScheduler_Run(t *testing.T) {
 		result = append(result, <-out)
 	}
 
-	assert.Equal(t, result[0], "SysB")
-	assert.Equal(t, result[1], "SysExclusive")
-	assert.Contains(t, result[2:], "SysA")
-	assert.Contains(t, result[2:], "SysC")
+	assert.Equal(t, result[0], "SysB", result)
+	assert.Equal(t, result[1], "SysExclusive", result)
+	assert.Contains(t, result[2:], "SysA", result)
+	assert.Contains(t, result[2:], "SysC", result)
 
 	w.Sched(ScheduleUpdate).stop()
 }

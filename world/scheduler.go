@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"runtime"
 	"slices"
+	"sync"
 
 	"github.com/bits-engine/bits-ecs/common/workerpool"
 )
-
-type unit = struct{}
 
 type Scheduler struct {
 	idCounter       SystemID
@@ -16,14 +15,16 @@ type Scheduler struct {
 	systemIDX       map[SystemID]int
 	executionLayers []executionLayer
 	w               *World
-	wp              *workerpool.WorkerPool[unit]
+	wp              *workerpool.WorkerPool
+	wg              *sync.WaitGroup
 }
 
 func NewScheduler(w *World) *Scheduler {
 	return &Scheduler{
 		systemIDX: map[SystemID]int{},
 		w:         w,
-		wp:        workerpool.New[unit](runtime.NumCPU()),
+		wp:        workerpool.New(runtime.NumCPU()),
+		wg:        &sync.WaitGroup{},
 	}
 }
 
@@ -42,6 +43,9 @@ func (s *Scheduler) addNoRebuild(conf *sysConf) SystemID {
 		accessConfig: conf.system.Access(
 			&csFilterRegistry{cs: s.w.CS()},
 		).Compile(),
+		wpTask: func() {
+			conf.system.Run(s.w)
+		},
 	}
 
 	s.systems = append(s.systems, sysNode)
@@ -196,27 +200,24 @@ func (s *Scheduler) stop() {
 
 func (s *Scheduler) run() {
 	for _, layer := range s.executionLayers {
-		go func() {
-			for _, sysID := range layer {
-				sysNode, exists := s.systemByID(sysID)
-				if !exists {
-					panic(fmt.Sprintf("system %d not found during Run", sysID))
-				}
-				if !sysNode.conf.threadLocked {
-					s.wp.Add(func() unit {
-						sysNode.conf.system.Run(s.w)
-						return unit{}
-					})
-					continue
-				}
-
-				s.wp.AddTo(sysNode.conf.lockedOnThread%s.wp.WorkerCount(), func() unit {
-					sysNode.conf.system.Run(s.w)
-					return unit{}
-				})
+		for _, sysID := range layer {
+			sysNode, exists := s.systemByID(sysID)
+			if !exists {
+				panic(fmt.Sprintf("system %d not found during Run", sysID))
 			}
-		}()
+			if len(layer) == 1 && !sysNode.conf.threadLocked {
+				sysNode.wpTask()
+				continue
+			}
 
-		s.wp.WaitN(len(layer))
+			if !sysNode.conf.threadLocked {
+				s.wp.Add(sysNode.wpTask, s.wg)
+				continue
+			}
+
+			s.wp.AddTo(sysNode.conf.lockedOnThread%s.wp.WorkerCount(), sysNode.wpTask, s.wg)
+		}
+
+		s.wg.Wait()
 	}
 }

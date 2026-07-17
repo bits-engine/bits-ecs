@@ -2,75 +2,80 @@ package workerpool
 
 import (
 	"runtime"
+	"sync"
 )
 
-type task[R any] func() R
+type Task func()
 
-type worker[R any] struct {
-	input  chan task[R]
-	output chan R
+type job struct {
+	t  Task
+	wg *sync.WaitGroup
 }
 
-func newWorker[R any](taskBuffer int, output chan R) *worker[R] {
-	input := make(chan task[R], taskBuffer)
+type worker struct {
+	input chan job
+}
 
-	return &worker[R]{
-		input:  input,
-		output: output,
+func newWorker(taskBuffer int) *worker {
+	input := make(chan job, taskBuffer)
+
+	return &worker{
+		input: input,
 	}
 }
 
-func (w *worker[R]) Start(lockOSThread bool) {
+func (w *worker) Start(lockOSThread bool) {
 	go func() {
 		if lockOSThread {
 			runtime.LockOSThread()
 		}
 
-		for task := range w.input {
-			w.output <- task()
+		for job := range w.input {
+			job.t()
+			if job.wg != nil {
+				job.wg.Done()
+			}
 		}
 	}()
 }
 
-func (w *worker[R]) Add(t task[R]) {
-	w.input <- t
+func (w *worker) Add(t Task) {
+	w.input <- job{t: t, wg: nil}
 }
 
-func (w *worker[R]) Out() <-chan R {
-	return w.output
+func (w *worker) AddWG(t Task, wg *sync.WaitGroup) {
+	wg.Add(1)
+	w.input <- job{t: t, wg: wg}
 }
 
-func (w *worker[R]) Stop() {
+func (w *worker) Stop() {
 	close(w.input)
 }
 
-type WorkerPool[R any] struct {
-	workers       []*worker[R]
+type WorkerPool struct {
+	workers       []*worker
 	roundRobinIDX int
-	output        chan R
 }
 
-func New[R any](workersCount int) *WorkerPool[R] {
+func New(workersCount int) *WorkerPool {
 	if workersCount <= 0 {
 		panic("worker count can not be <= 0")
 	}
 
-	output := make(chan R, workersCount)
-	workers := make([]*worker[R], 0, workersCount)
+	workers := make([]*worker, 0, workersCount)
 	for range workersCount {
-		w := newWorker(workersCount, output)
+		w := newWorker(workersCount)
 		w.Start(true)
 		workers = append(workers, w)
 	}
 
-	return &WorkerPool[R]{
+	return &WorkerPool{
 		workers:       workers,
 		roundRobinIDX: 0,
-		output: output,
 	}
 }
 
-func (wp *WorkerPool[R]) nextWorkerIDX() int {
+func (wp *WorkerPool) nextWorkerIDX() int {
 	idx := wp.roundRobinIDX
 	wp.roundRobinIDX++
 	wp.roundRobinIDX = wp.roundRobinIDX % len(wp.workers)
@@ -78,41 +83,20 @@ func (wp *WorkerPool[R]) nextWorkerIDX() int {
 	return idx
 }
 
-func (wp *WorkerPool[R]) WorkerCount() int {
+func (wp *WorkerPool) WorkerCount() int {
 	return len(wp.workers)
 }
 
-func (wp *WorkerPool[R]) Output() <-chan R {
-	return wp.output
-}
-
-func (wp *WorkerPool[R]) Stop() {
+func (wp *WorkerPool) Stop() {
 	for _, w := range wp.workers {
 		w.Stop()
 	}
-
-	close(wp.output)
 }
 
-func (wp *WorkerPool[R]) AddTo(workerID int, tasks ...task[R]) {
-	for _, t := range tasks {
-		wp.workers[workerID].Add(t)
-	}
+func (wp *WorkerPool) AddTo(workerID int, t Task, wg *sync.WaitGroup) {
+	wp.workers[workerID].AddWG(t, wg)
 }
 
-func (wp *WorkerPool[R]) Add(tasks ...task[R]) {
-	for _, t := range tasks {
-		idx := wp.nextWorkerIDX()
-		wp.workers[idx].Add(t)
-	}
-}
-
-func (wp *WorkerPool[R]) WaitN(resultsCount int) []R {
-	result := make([]R, 0, resultsCount)
-
-	for len(result) < resultsCount {
-		result = append(result, <-wp.output)
-	}
-
-	return result
+func (wp *WorkerPool) Add(t Task, wg *sync.WaitGroup) {
+	wp.workers[wp.nextWorkerIDX()].AddWG(t, wg)
 }

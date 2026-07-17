@@ -2,6 +2,7 @@ package workerpool_test
 
 import (
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,8 +14,8 @@ type res struct {
 	value int
 }
 
-func newwp(count int) *workerpool.WorkerPool[res] {
-	return workerpool.New[res](count)
+func newwp(count int) *workerpool.WorkerPool {
+	return workerpool.New(count)
 }
 
 func TestWP_3Tasks(t *testing.T) {
@@ -22,22 +23,38 @@ func TestWP_3Tasks(t *testing.T) {
 	taskDuration := 100 * time.Millisecond
 	startTime := time.Now()
 
+	out := make(chan res, 3)
+	wg := &sync.WaitGroup{}
+
 	wp.Add(
-		func() res {
+		func() {
 			time.Sleep(taskDuration)
-			return res{value: 0}
+			out <- res{value: 0}
 		},
-		func() res {
+		wg,
+	)
+	wp.Add(
+		func() {
 			time.Sleep(taskDuration)
-			return res{value: 1}
+			out <- res{value: 1}
 		},
-		func() res {
+		wg,
+	)
+	wp.Add(
+		func() {
 			time.Sleep(taskDuration)
-			return res{value: 3}
+			out <- res{value: 3}
 		},
+		wg,
 	)
 
-	resList := wp.WaitN(3)
+	wg.Wait()
+	close(out)
+	resList := make([]res, 0, 3)
+	for msg := range out {
+		resList = append(resList, msg)
+	}
+
 	totalDuration := time.Since(startTime)
 
 	assert.Len(t, resList, 3)
@@ -56,29 +73,47 @@ func TestWP_3TasksOnOneWorker(t *testing.T) {
 	taskDuration := 100 * time.Millisecond
 	startTime := time.Now()
 
+	out := make(chan res, 3)
+	wg := &sync.WaitGroup{}
+
 	wp.AddTo(
 		0,
-		func() res {
+		func() {
 			time.Sleep(taskDuration)
-			return res{value: 0}
+			out <- res{value: 0}
 		},
-		func() res {
+		wg,
+	)
+	wp.AddTo(
+		0,
+		func() {
 			time.Sleep(taskDuration)
-			return res{value: 1}
+			out <- res{value: 1}
 		},
-		func() res {
+		wg,
+	)
+	wp.AddTo(
+		0,
+		func() {
 			time.Sleep(taskDuration)
-			return res{value: 3}
+			out <- res{value: 3}
 		},
+		wg,
 	)
 
-	resList := wp.WaitN(3)
+	wg.Wait()
+	close(out)
+	resList := make([]res, 0, 3)
+	for msg := range out {
+		resList = append(resList, msg)
+	}
+
 	totalDuration := time.Since(startTime)
 
 	assert.Len(t, resList, 3)
 
-	minAllowedParallelTime := 300 * time.Millisecond
-	assert.Greater(t, totalDuration, minAllowedParallelTime)
+	maxAllowedParallelTime := 300 * time.Millisecond
+	assert.Greater(t, totalDuration, maxAllowedParallelTime)
 
 	wp.Stop()
 }

@@ -3,8 +3,11 @@ package world
 import (
 	"github.com/bits-engine/bits-ecs/common/workerpool"
 	"github.com/bits-engine/bits-ecs/component"
+	"github.com/bits-engine/bits-ecs/logging"
 	"github.com/bits-engine/bits-ecs/resource"
 )
+
+var worldlog = logging.New("World")
 
 type World struct {
 	cs         *component.ComponentStorage
@@ -50,22 +53,29 @@ func (w *World) AddSystem(schedule Schedule, cfg *sysConf) SystemID {
 }
 
 func (w *World) Run() {
+	worldlog.Get().Info("Starting world...")
 	// Run startup scheduler...
 	w.Sched(ScheduleStartup).run()
+
+	worldlog.Get().Info("ScheduleStartup finished")
 
 	w.isRunning = true
 	for w.isRunning {
 		// Run update scheduler in loop...
 		w.Sched(ScheduleUpdate).run()
 	}
+	worldlog.Get().Info("ScheduleUpdate loop finished")
 
 	// Run shutdown scheduler...
 	w.Sched(ScheduleShutdown).run()
+	worldlog.Get().Info("ScheduleShutdown finished")
 
 	// Stop workers
 	w.wp.Stop()
+	worldlog.Get().Info("Worker pool stopped")
 }
 
 func (w *World) Stop() {
+	worldlog.Get().Info("Stopping...")
 	w.isRunning = false
 }

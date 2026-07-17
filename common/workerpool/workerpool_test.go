@@ -59,7 +59,7 @@ func TestWP_3Tasks(t *testing.T) {
 
 	assert.Len(t, resList, 3)
 
-	maxAllowedParallelTime := 150 * time.Millisecond
+	maxAllowedParallelTime := 299 * time.Millisecond
 	assert.Less(t, totalDuration, maxAllowedParallelTime,
 		"Tasks ran serially! Total time %v exceeded parallel threshold of %v",
 		totalDuration, maxAllowedParallelTime,

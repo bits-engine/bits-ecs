@@ -43,6 +43,13 @@ func (cs *ComponentStorage) remove(ent entity.Entity, cid ComponentID) bool {
 	return cs.pools[cid].remove(ent)
 }
 
+func (cs *ComponentStorage) removeAll(ent entity.Entity) {
+	for cid, pool := range cs.pools {
+		cs.entityLookupTable.remove(ent, cid)
+		pool.remove(ent)
+	}
+}
+
 // Remove removes component for entity.
 func Remove[T any](
 	cs *ComponentStorage,
@@ -123,4 +130,12 @@ func Get[T any](
 ) (*T, bool) {
 	typedPool := cs.pools[typ.id].(*typedPool[T])
 	return typedPool.get(ent)
+}
+
+// RemoveAll removes all components from entity.
+func RemoveAll(
+	cs *ComponentStorage,
+	ent entity.Entity,
+) {
+	cs.removeAll(ent)
 }

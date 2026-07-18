@@ -215,3 +215,38 @@ func TestStorage_Field(t *testing.T) {
 		assert.Equal(t, ca.value, int(qr.Entity()))
 	}
 }
+
+func TestStorage_RemoveAll(t *testing.T) {
+	cs := component.NewComponentStorage()
+	CAT := component.Register[CA](cs)
+	CBT := component.Register[CB](cs)
+	CDT := component.Register[CD](cs)
+
+	ent1 := entity.Entity(0)
+	ent2 := entity.Entity(1)
+
+	component.Set(cs, ent1, CAT, CA{value: 67})
+	component.Set(cs, ent1, CBT, CB{value: 4.2})
+	component.SetMany(cs, ent2,
+		component.With(CAT, CA{value: 78}),
+		component.With(CDT, CD{value: "ent2"}),
+	)
+
+	assert.True(t, component.Has(cs, ent1, CAT))
+	assert.True(t, component.Has(cs, ent1, CBT))
+	assert.False(t, component.Has(cs, ent1, CDT))
+
+	assert.True(t, component.Has(cs, ent2, CAT))
+	assert.True(t, component.Has(cs, ent2, CDT))
+	assert.False(t, component.Has(cs, ent2, CBT))
+
+	component.RemoveAll(cs, ent1)
+
+	assert.False(t, component.Has(cs, ent1, CAT))
+	assert.False(t, component.Has(cs, ent1, CBT))
+	assert.False(t, component.Has(cs, ent1, CDT))
+
+	assert.True(t, component.Has(cs, ent2, CAT))
+	assert.True(t, component.Has(cs, ent2, CDT))
+	assert.False(t, component.Has(cs, ent2, CBT))
+}

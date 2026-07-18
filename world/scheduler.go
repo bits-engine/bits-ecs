@@ -13,6 +13,7 @@ import (
 
 var schedlog = logging.New("Scheduler")
 
+// Scheduler can be used to add systems in world.
 type Scheduler struct {
 	idCounter       SystemID
 	systems         []*systemNode
@@ -60,6 +61,7 @@ func (s *Scheduler) addNoRebuild(conf *sysConf) SystemID {
 	return id
 }
 
+// AddMany adds multiple systems with only one execution layers rebuild.
 func (s *Scheduler) AddMany(confs ...*sysConf) []SystemID {
 	res := make([]SystemID, 0, len(confs))
 
@@ -72,6 +74,7 @@ func (s *Scheduler) AddMany(confs ...*sysConf) []SystemID {
 	return res
 }
 
+// Add adds one system and rebuilds execution layers.
 func (s *Scheduler) Add(conf *sysConf) SystemID {
 	sysID := s.addNoRebuild(conf)
 	s.rebuildExecutionLayers()

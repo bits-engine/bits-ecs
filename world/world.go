@@ -1,11 +1,12 @@
 // world package provides ECS world, and also scheduling functionality.
-// 
+//
 // Main structure is [World]
 package world
 
 import (
 	"github.com/bits-engine/bits-ecs/common/workerpool"
 	"github.com/bits-engine/bits-ecs/component"
+	"github.com/bits-engine/bits-ecs/entity"
 	"github.com/bits-engine/bits-ecs/logging"
 	"github.com/bits-engine/bits-ecs/resource"
 )
@@ -16,11 +17,12 @@ var worldlog = logging.New("World")
 //
 // Used to setup ECS world, manipulate with it from systems, and run / stop simulation.
 type World struct {
-	cs         *component.ComponentStorage
-	rs         *resource.ResourceStorage
-	schedulers []*Scheduler
-	isRunning  bool
-	wp         *workerpool.WorkerPool
+	entityCounter entity.Entity
+	cs            *component.ComponentStorage
+	rs            *resource.ResourceStorage
+	schedulers    []*Scheduler
+	isRunning     bool
+	wp            *workerpool.WorkerPool
 }
 
 func New(conf *Conf) *World {
@@ -42,6 +44,16 @@ func New(conf *Conf) *World {
 	return w
 }
 
+// Creates new entity.
+//
+// Needs to be used only in exclusive systems.
+func (w *World) New() entity.Entity {
+	idx := w.entityCounter
+	w.entityCounter++
+	component.SetMany(w.CS(), idx)
+	return idx
+}
+
 // CS returns [component.ComponentStorage] of world.
 func (w *World) CS() *component.ComponentStorage {
 	return w.cs
@@ -60,9 +72,9 @@ func (w *World) Sched(schedule Schedule) *Scheduler {
 // AddSystem used to add one system at time in scheduler.
 //
 // It is better to use Add methods on scheduler itself, for example:
-//     
-//     w := world.World(...)
-//     w.Sched(world.ScheduleUpdate).Add(...)
+//
+//	w := world.World(...)
+//	w.Sched(world.ScheduleUpdate).Add(...)
 func (w *World) AddSystem(schedule Schedule, cfg *sysConf) SystemID {
 	return w.schedulers[schedule].Add(cfg)
 }

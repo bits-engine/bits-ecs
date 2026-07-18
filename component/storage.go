@@ -9,6 +9,10 @@ type pool interface {
 	remove(ent entity.Entity) bool
 }
 
+// ComponentStorage holds everything that needed to get/set/remove/query components.
+//
+// Uses implementation based on sparse-sets.
+// For querying uses archetype bitsets to fastly retrieving all matched entities.
 type ComponentStorage struct {
 	pools             map[ComponentID]pool
 	idCounter         ComponentID
@@ -39,6 +43,7 @@ func (cs *ComponentStorage) remove(ent entity.Entity, cid ComponentID) bool {
 	return cs.pools[cid].remove(ent)
 }
 
+// Remove removes component for entity.
 func Remove[T any](
 	cs *ComponentStorage,
 	ent entity.Entity,
@@ -47,6 +52,7 @@ func Remove[T any](
 	return cs.remove(ent, typ.id)
 }
 
+// Has checks if entity has component.
 func Has[T any](
 	cs *ComponentStorage,
 	ent entity.Entity,
@@ -55,6 +61,7 @@ func Has[T any](
 	return cs.has(ent, typ.id)
 }
 
+// Register registers new type of component in component storage.
 func Register[T any](cs *ComponentStorage) *ComponentType[T] {
 	id := cs.nextComponentID()
 
@@ -64,6 +71,7 @@ func Register[T any](cs *ComponentStorage) *ComponentType[T] {
 	return &ComponentType[T]{id: id}
 }
 
+// Set sets new component value for entity
 func Set[T any](
 	cs *ComponentStorage,
 	ent entity.Entity,
@@ -81,6 +89,7 @@ type componentSetter struct {
 	setter      func(cs *ComponentStorage, ent entity.Entity)
 }
 
+// With creates new componentSetter that can be used in [SetMany]
 func With[T any](typ *ComponentType[T], val T) componentSetter {
 	return componentSetter{
 		componentID: typ.ID(),
@@ -91,6 +100,7 @@ func With[T any](typ *ComponentType[T], val T) componentSetter {
 	}
 }
 
+// SetMany sets multiple components for entity at once. Uses [With] to create componentSetters
 func SetMany(cs *ComponentStorage, ent entity.Entity, setters ...componentSetter) {
 	componentIDs := make([]ComponentID, 0, len(setters))
 	for _, s := range setters {
@@ -101,6 +111,11 @@ func SetMany(cs *ComponentStorage, ent entity.Entity, setters ...componentSetter
 	cs.entityLookupTable.set(ent, componentIDs...)
 }
 
+// Get gets reference of entity's component.
+//
+// Can be used to read/write component.
+// 
+// If component is not presented on entity, second return value will be false.
 func Get[T any](
 	cs *ComponentStorage,
 	ent entity.Entity,

@@ -5,7 +5,7 @@ This module only provides ECS core (world, component / resource storage, schedul
 
 # Installation
 ```sh
-go get -u github.com/bits/bits-ecs
+go get -u github.com/bits-engine/bits-ecs
 ```
 
 # Examples

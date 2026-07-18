@@ -1,3 +1,8 @@
+// resource package provides structures for get/set/remove resources in ECS world.
+//
+// In ECS resource represents global data-structure for one world.
+//
+// Main structure is [ResourceStorage]
 package resource
 
 type ResourceID uint
